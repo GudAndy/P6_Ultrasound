@@ -54,6 +54,7 @@ uint8_t in_buffer[BUFF_SIZE], out_buffer[BUFF_SIZE];
 uint8_t in_idx = 0;
 uint8_t ch;
 
+uint8_t post_check = 0;
 
 
 uint32_t distance = 0;
@@ -66,6 +67,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
+void POST();
 
 /* USER CODE END PFP */
 
@@ -118,10 +120,14 @@ int main(void)
 
   while (1)
   {
+	  if (!post_check) POST();
+	  HAL_Delay(10);
+	  if (post_check == 1){
+		  distance = read_ultrasound();
+		  sprintf((char *) out_buffer, "Distance:\t%ld\n", distance);
+		  HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
+	  }
 
-	  distance = read_ultrasound();
-	  sprintf((char *) out_buffer, "Distance:\t%ld\n", distance);
-	  HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -361,6 +367,51 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
     HAL_UART_Transmit_IT(huart, &ch, 1);
 
     HAL_UART_Receive_IT(huart, &ch, 1);
+}
+
+void POST(){
+	sprintf((char *) out_buffer, "Would you like to run the POST: ");
+	HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
+	HAL_UART_Receive(&huart2, in_buffer, 1, HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, in_buffer, strlen((char *) in_buffer), HAL_MAX_DELAY);
+
+	if (strncmp((char *) in_buffer, "y", 1) == 0){
+		HAL_UART_Transmit(&huart2, (uint8_t *) "\nPOSTING\n", 9, HAL_MAX_DELAY);
+		distance = read_ultrasound();
+		uint32_t true = distance * speed_of_sound;
+
+		// Until success
+		while (true < 300 || true > 1000){
+			memset(out_buffer, '\0',  sizeof(out_buffer));
+			sprintf((char *) out_buffer, "Object is outside of POST range!\n");
+			HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
+
+			// Prompt retry
+			memset(out_buffer, '\0',  sizeof(out_buffer));
+			sprintf((char *) out_buffer, "Try Again? ");
+			HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
+			HAL_UART_Receive(&huart2, in_buffer, 1, HAL_MAX_DELAY);
+			HAL_UART_Transmit(&huart2, (uint8_t *) "\n", 1, HAL_MAX_DELAY);
+
+			if (strncmp((char *) in_buffer, "n", 1) == 0){	// If don't want to retry
+				distance = -1;
+				memset(out_buffer, '\0',  sizeof(out_buffer));
+				sprintf((char *) out_buffer, "POST Failed!\n");
+				HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
+				post_check = 2;
+				break;
+			}
+			distance = read_ultrasound();
+			true = distance * speed_of_sound;
+
+		}
+		if (distance != -1){
+			memset(out_buffer, '\0',  sizeof(out_buffer));
+			sprintf((char *) out_buffer, "POST Passed!\n");
+			HAL_UART_Transmit(&huart2, out_buffer, strlen((char *) out_buffer), HAL_MAX_DELAY);
+			post_check = 1;
+		}
+	}
 }
 
 

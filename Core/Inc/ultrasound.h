@@ -17,6 +17,7 @@
 extern uint8_t echoNum;
 extern uint32_t edge1, edge2;
 extern uint8_t read_done;
+extern const float speed_of_sound;
 
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;

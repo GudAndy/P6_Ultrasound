@@ -54,7 +54,10 @@ uint32_t read_ultrasound(void){
 	} while (HAL_GetTick() - start < 100);
 	read_done = 0;
 	HAL_TIM_IC_Stop_IT(&echoTIM, TIM_CHANNEL_1);
-	uint32_t dist = (edge2 - edge1) * speed_of_sound;
+	uint32_t dist = 0;
+	if (edge2 - edge1 < 25000){
+		dist = (edge2 - edge1) * speed_of_sound;
+	}
 	return dist;
 }
 
