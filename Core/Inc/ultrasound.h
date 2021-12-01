@@ -22,7 +22,6 @@ extern const float speed_of_sound;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim4;
 
-//void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim);
 void usDelay(uint32_t uSec);
 uint32_t read_ultrasound(void);
 
